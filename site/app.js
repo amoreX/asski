@@ -407,11 +407,17 @@ document.getElementById("btn-back").addEventListener("click", () => {
   showView("upload");
 });
 
-// --- Convert (real-time playback + MediaRecorder capture) ---
+// --- Convert (frame-by-frame seeking — matches Electron app quality) ---
+function seekTo(video, time) {
+  return new Promise((resolve) => {
+    video.onseeked = () => resolve();
+    video.currentTime = time;
+  });
+}
+
 document.getElementById("btn-convert").addEventListener("click", async () => {
   if (converting) return;
   converting = true;
-
   showView("progress");
 
   const cols = computeCols();
@@ -429,7 +435,7 @@ document.getElementById("btn-convert").addEventListener("click", async () => {
   progressCanvas.height = outH;
   const progressCtx = progressCanvas.getContext("2d");
 
-  const stream = renderCanvas.captureStream(30);
+  const stream = renderCanvas.captureStream(0);
   const mimeType = [
     "video/webm;codecs=vp9",
     "video/webm;codecs=vp8",
@@ -443,56 +449,44 @@ document.getElementById("btn-convert").addEventListener("click", async () => {
   const chunks = [];
   recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
-  const settingsSnapshot = { ...settings };
   const duration = sourceVideo.duration;
+  const fps = 30;
+  const totalFrames = Math.ceil(duration * fps);
+  const frameDuration = 1 / fps;
 
   recorder.start();
-  sourceVideo.currentTime = 0;
-  sourceVideo.playbackRate = 1;
 
-  await new Promise((resolve) => {
-    sourceVideo.onseeked = () => {
-      sourceVideo.play();
-      resolve();
-    };
-    sourceVideo.currentTime = 0;
-  });
+  const track = stream.getVideoTracks()[0];
 
-  const processFrame = () => {
-    if (sourceVideo.paused || sourceVideo.ended) {
-      recorder.stop();
-      return;
-    }
+  for (let i = 0; i < totalFrames; i++) {
+    const time = i * frameDuration;
+    await seekTo(sourceVideo, Math.min(time, duration));
 
     renderFrame(renderCtx, sourceVideo, outW, outH);
+    if (track.requestFrame) track.requestFrame();
 
-    progressCtx.drawImage(renderCanvas, 0, 0);
+    // Hold each frame long enough for MediaRecorder to capture it
+    await new Promise((r) => setTimeout(r, 30));
 
-    const pct = Math.min(99, (sourceVideo.currentTime / duration) * 100);
-    progressStage.textContent = `Recording... ${formatDuration(sourceVideo.currentTime)} / ${formatDuration(duration)}`;
+    if (i % 3 === 0 || i === totalFrames - 1) {
+      progressCtx.drawImage(renderCanvas, 0, 0);
+    }
+
+    const pct = Math.min(95, ((i + 1) / totalFrames) * 95);
+    progressStage.textContent = `Frame ${i + 1} / ${totalFrames}`;
     progressFill.style.width = `${pct}%`;
     progressPercent.textContent = `${Math.round(pct)}%`;
+  }
 
-    requestAnimationFrame(processFrame);
-  };
-
-  requestAnimationFrame(processFrame);
-
-  await new Promise((resolve) => {
-    recorder.onstop = resolve;
-    sourceVideo.onended = () => {
-      setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 100);
-    };
-  });
-
-  sourceVideo.pause();
+  recorder.stop();
+  await new Promise((resolve) => { recorder.onstop = resolve; });
 
   const webmBlob = new Blob(chunks, { type: mimeType || "video/webm" });
 
-  // Try converting webm → mp4 via ffmpeg.wasm (with 8s timeout)
-  progressStage.textContent = "Converting to MP4...";
-  progressFill.style.width = "95%";
-  progressPercent.textContent = "95%";
+  // Try converting webm → mp4 via ffmpeg.wasm (with 10s timeout)
+  progressStage.textContent = "Finalizing...";
+  progressFill.style.width = "97%";
+  progressPercent.textContent = "97%";
 
   let convertedToMp4 = false;
   try {
@@ -502,7 +496,7 @@ document.getElementById("btn-convert").addEventListener("click", async () => {
       await ff.exec(["-i", "input.webm", "-c:v", "libx264", "-preset", "fast", "-crf", "22", "-pix_fmt", "yuv420p", "-y", "output.mp4"]);
       return await ff.readFile("output.mp4");
     })();
-    const timeout = new Promise((_, reject) => setTimeout(() => reject("timeout"), 8000));
+    const timeout = new Promise((_, reject) => setTimeout(() => reject("timeout"), 10000));
     const data = await Promise.race([ffPromise, timeout]);
     if (outputURL) URL.revokeObjectURL(outputURL);
     outputBlob = new Blob([data.buffer], { type: "video/mp4" });
