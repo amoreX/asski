@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import Header from './components/Header'
 import DropZone from './components/DropZone'
 import Preview from './components/Preview'
@@ -241,6 +242,7 @@ export default function App() {
       )}
 
       <video ref={sourceVideoRef} muted playsInline className="hidden" />
+      <Analytics />
     </div>
   )
 }
