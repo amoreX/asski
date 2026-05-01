@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 export default function Done({ outputUrl, outputBlob, fileName, onAnother }) {
   const ext = outputBlob?.type?.includes('mp4') ? 'mp4' : 'webm'
-  const defaultName = `ascuwu_${(fileName || 'output').replace(/\.[^.]+$/, '')}`
+  const defaultName = `ascwu_${(fileName || 'output').replace(/\.[^.]+$/, '')}`
   const [name, setName] = useState(defaultName)
 
   const handleDownload = () => {
