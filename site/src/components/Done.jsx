@@ -1,11 +1,15 @@
+import { useState } from 'react'
+
 export default function Done({ outputUrl, outputBlob, fileName, onAnother }) {
   const ext = outputBlob?.type?.includes('mp4') ? 'mp4' : 'webm'
+  const defaultName = `ascuwu_${(fileName || 'output').replace(/\.[^.]+$/, '')}`
+  const [name, setName] = useState(defaultName)
 
   const handleDownload = () => {
     if (!outputUrl) return
     const a = document.createElement('a')
     a.href = outputUrl
-    a.download = `ascuwu_${(fileName || 'output').replace(/\.[^.]+$/, '')}.${ext}`
+    a.download = `${name}.${ext}`
     a.click()
   }
 
@@ -16,9 +20,20 @@ export default function Done({ outputUrl, outputBlob, fileName, onAnother }) {
       </div>
       <h2 className="text-xl font-semibold">Done</h2>
       <p className="font-mono text-xs text-dim">Your ASCII video is ready.</p>
-      <div className="flex gap-2.5 mt-1.5">
+      <div className="flex items-center gap-1.5 mt-1 w-full max-w-xs">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          spellCheck={false}
+          aria-label="File name"
+          className="flex-1 min-w-0 py-2 px-3 border border-border rounded-[6px] bg-bg text-text font-mono text-xs outline-none focus:border-accent transition-colors duration-150 truncate"
+        />
+        <span className="font-mono text-xs text-dim shrink-0">.{ext}</span>
+      </div>
+      <div className="flex gap-2.5">
         <button onClick={handleDownload} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[6px] bg-accent text-white text-sm font-medium cursor-pointer hover:opacity-90 active:scale-[0.97] transition-all duration-150">
-          Download .{ext}
+          Download
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
         <button onClick={onAnother} className="px-5 py-2.5 rounded-[6px] bg-transparent text-muted border border-border text-sm font-medium cursor-pointer hover:text-text hover:border-border-hover transition-colors duration-150">
