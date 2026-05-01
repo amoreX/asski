@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ascuwu</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="titlebar-drag"></div>
+
+    <div class="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="logo">
+          <span class="logo-icon">01</span>
+          <span class="logo-text">ascuwu</span>
+        </div>
+        <p class="tagline">video → binary</p>
+      </header>
+
+      <!-- Upload State -->
+      <main id="upload-view" class="view active">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-zone-content">
+            <div class="drop-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p class="drop-title">Drop your video here</p>
+            <p class="drop-subtitle">or click to browse</p>
+            <p class="drop-formats">MP4, MOV, AVI, MKV, WebM</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Processing State -->
+      <main id="process-view" class="view">
+        <div class="process-layout">
+          <!-- Left: Preview -->
+          <div class="preview-side">
+            <div class="video-info-card">
+              <div class="video-preview-wrapper">
+                <video id="video-preview" muted></video>
+              </div>
+              <div class="video-meta">
+                <p class="video-name" id="video-name">—</p>
+                <div class="meta-pills">
+                  <span class="pill" id="pill-res">—</span>
+                  <span class="pill" id="pill-fps">—</span>
+                  <span class="pill" id="pill-dur">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Preview -->
+            <div class="live-preview-card">
+              <div class="live-preview-header">
+                <div class="mode-toggle">
+                  <button class="mode-btn active" data-mode="overlay">Overlay</button>
+                  <button class="mode-btn" data-mode="replace">Replace</button>
+                </div>
+                <button id="btn-refresh-preview" class="btn-icon" title="Refresh preview">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="live-preview-canvas-wrapper">
+                <canvas id="live-preview-canvas"></canvas>
+                <div id="preview-loader" class="preview-loader">
+                  <div class="spinner"></div>
+                  <span class="loader-text">Generating preview...</span>
+                </div>
+                <button id="btn-play-preview" class="play-btn" aria-label="Play preview">
+                  <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <svg id="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Settings -->
+          <div class="settings-side">
+            <div class="settings-card">
+              <h3 class="settings-title">Settings</h3>
+
+              <!-- Font Size (controls resolution) -->
+              <div class="setting-row">
+                <label class="setting-label" for="font-slider">
+                  Character Size
+                  <span class="setting-value" id="font-value">10px</span>
+                </label>
+                <input type="range" id="font-slider" min="4" max="24" value="10" step="1" class="slider" />
+                <div class="slider-hints">
+                  <span>Tiny / More Detail</span>
+                  <span>Large / Less Detail</span>
+                </div>
+              </div>
+
+              <!-- Auto Resolution Display -->
+              <div class="setting-row">
+                <label class="setting-label">
+                  Resolution
+                  <span class="setting-value" id="cols-value">— cols (auto)</span>
+                </label>
+                <p class="setting-hint">Matches source video. Smaller characters = more columns.</p>
+              </div>
+
+              <!-- Character Set -->
+              <div class="setting-row">
+                <label class="setting-label">
+                  Character Set
+                </label>
+                <div class="preset-buttons">
+                  <button class="preset-btn active" data-preset="binary">01</button>
+                  <button class="preset-btn" data-preset="ascii">ASCII</button>
+                  <button class="preset-btn" data-preset="blocks">Blocks</button>
+                  <button class="preset-btn" data-preset="custom">Custom</button>
+                </div>
+                <div class="charset-input-row">
+                  <input type="text" id="charset-input" class="text-input" value="01" spellcheck="false" placeholder="Characters (dark → bright)" />
+                </div>
+                <p class="setting-hint">Ordered from darkest to brightest</p>
+              </div>
+
+              <!-- Color Mode -->
+              <div class="setting-row">
+                <label class="setting-label">
+                  Color Mode
+                </label>
+                <div class="preset-buttons">
+                  <button class="color-mode-btn active" data-mode="original">Original</button>
+                  <button class="color-mode-btn" data-mode="mono">Mono</button>
+                  <button class="color-mode-btn" data-mode="tint">Tint</button>
+                </div>
+                <div id="tint-controls" class="tint-row hidden">
+                  <input type="color" id="tint-color" class="color-picker" value="#22d3ee" />
+                  <span class="tint-label" id="tint-hex">#22d3ee</span>
+                </div>
+              </div>
+
+              <!-- Background Color -->
+              <div class="setting-row">
+                <label class="setting-label">
+                  Background
+                </label>
+                <div class="preset-buttons">
+                  <button class="bg-btn active" data-bg="#000000">Black</button>
+                  <button class="bg-btn" data-bg="#09090b">Zinc</button>
+                  <button class="bg-btn" data-bg="#ffffff">White</button>
+                  <button class="bg-btn" data-bg="custom">Pick</button>
+                </div>
+                <div id="bg-picker-row" class="tint-row hidden">
+                  <input type="color" id="bg-color" class="color-picker" value="#000000" />
+                  <span class="tint-label" id="bg-hex">#000000</span>
+                </div>
+              </div>
+
+              <!-- Overlay Settings (only visible in overlay mode) -->
+              <div id="overlay-settings" class="setting-row">
+                <label class="setting-label" for="dim-slider">
+                  Image Dim
+                  <span class="setting-value" id="dim-value">40%</span>
+                </label>
+                <input type="range" id="dim-slider" min="0" max="80" value="40" step="5" class="slider" />
+                <div class="slider-hints">
+                  <span>Full Image</span>
+                  <span>Darker</span>
+                </div>
+              </div>
+
+              <div id="boost-setting" class="setting-row">
+                <label class="setting-label" for="boost-slider">
+                  Character Boost
+                  <span class="setting-value" id="boost-value">60</span>
+                </label>
+                <input type="range" id="boost-slider" min="0" max="150" value="60" step="5" class="slider" />
+                <div class="slider-hints">
+                  <span>Subtle</span>
+                  <span>Strong</span>
+                </div>
+              </div>
+
+              <!-- Font Weight -->
+              <div class="setting-row">
+                <label class="setting-label" for="weight-slider">
+                  Font Weight
+                  <span class="setting-value" id="weight-value">400</span>
+                </label>
+                <input type="range" id="weight-slider" min="100" max="900" value="400" step="100" class="slider" />
+                <div class="slider-hints">
+                  <span>Thin</span>
+                  <span>Bold</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+              <button id="btn-back" class="btn btn-ghost">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"/>
+                  <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back
+              </button>
+              <button id="btn-convert" class="btn btn-primary">
+                Convert
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="13 17 18 12 13 7"/>
+                  <polyline points="6 17 11 12 6 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Progress State -->
+      <main id="progress-view" class="view">
+        <div class="progress-container">
+          <div class="progress-visual">
+            <canvas id="preview-canvas"></canvas>
+          </div>
+          <div class="progress-info">
+            <p class="progress-stage" id="progress-stage">Preparing...</p>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+            <p class="progress-percent" id="progress-percent">0%</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Done State -->
+      <main id="done-view" class="view">
+        <div class="done-container">
+          <div class="done-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h2 class="done-title">Conversion Complete</h2>
+          <p class="done-subtitle" id="done-path">—</p>
+          <div class="done-actions">
+            <button id="btn-open" class="btn btn-primary">
+              Open File
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </button>
+            <button id="btn-another" class="btn btn-ghost">Convert Another</button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <canvas id="work-canvas" style="display:none"></canvas>
+    <script src="renderer.js"></script>
+  </body>
+</html>

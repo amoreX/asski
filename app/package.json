@@ -1,0 +1,12 @@
+{
+  "name": "ascuwu",
+  "version": "0.1.0",
+  "description": "Convert videos into binary ASCII art",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^35.0.0"
+  }
+}
