@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #000000;
+  --color-raised: #111111;
+  --color-border: #222222;
+  --color-border-hover: #333333;
+  --color-text: #E8E8E8;
+  --color-muted: #999999;
+  --color-dim: #666666;
+  --color-accent: #D71921;
+  --color-accent-hover: #b8151c;
+  --color-accent-dim: rgba(215, 25, 33, 0.1);
+  --color-green: #4A9E5C;
+  --color-green-dim: rgba(74, 158, 92, 0.15);
+  --font-body: "Space Grotesk", sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --font-render: "JetBrains Mono", "Courier New", monospace;
+  --animate-fade-in: fade-in 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
