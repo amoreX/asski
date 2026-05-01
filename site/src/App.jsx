@@ -63,6 +63,9 @@ export default function App() {
     setView('progress')
     setProgress({ stage: 'Preparing...', percent: 0 })
 
+    // Wait for React to render the progress view so the canvas ref is available
+    await new Promise((r) => setTimeout(r, 100))
+
     const video = sourceVideoRef.current
     const { charW, charH } = measureChar(settings.fontSize, settings.fontWeight)
     const c = Math.floor(video.videoWidth / charW)
@@ -102,6 +105,13 @@ export default function App() {
       video.currentTime = t
     })
 
+    // Ensure video is ready before processing
+    if (!video.videoWidth) {
+      await new Promise((resolve) => {
+        video.addEventListener('loadeddata', resolve, { once: true })
+      })
+    }
+
     const settingsSnapshot = { ...settings }
 
     for (let i = 0; i < totalFrames; i++) {
@@ -110,9 +120,7 @@ export default function App() {
       if (track.requestFrame) track.requestFrame()
       await new Promise((r) => setTimeout(r, 30))
 
-      if (pCtx && (i % 3 === 0 || i === totalFrames - 1)) {
-        pCtx.drawImage(renderCanvas, 0, 0)
-      }
+      if (pCtx) pCtx.drawImage(renderCanvas, 0, 0)
       setProgress({
         stage: `Frame ${i + 1} / ${totalFrames}`,
         percent: Math.min(95, ((i + 1) / totalFrames) * 95),
@@ -129,17 +137,15 @@ export default function App() {
     // Try ffmpeg.wasm mp4 conversion with timeout
     let finalBlob = blob
     try {
-      const { FFmpeg } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js')
-      const { toBlobURL } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js')
-      const CORE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg')
+      const { toBlobURL } = await import('@ffmpeg/util')
 
       const ff = new FFmpeg()
-      const loadPromise = ff.load({
-        coreURL: await toBlobURL(`${CORE}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${CORE}/ffmpeg-core.wasm`, 'application/wasm'),
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+      await ff.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
       })
-      const timeout = new Promise((_, reject) => setTimeout(() => reject('timeout'), 10000))
-      await Promise.race([loadPromise, timeout])
 
       await ff.writeFile('input.webm', new Uint8Array(await blob.arrayBuffer()))
       await ff.exec(['-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p', '-y', 'output.mp4'])

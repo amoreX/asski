@@ -109,9 +109,12 @@ export default function useAsciiRenderer() {
   }, [])
 
   const renderFrame = useCallback((ctx, source, outW, outH, settings) => {
+    if (!source.videoWidth || !source.videoHeight) return
     const { charW, charH } = measureChar(settings.fontSize, settings.fontWeight)
     const cols = Math.floor(source.videoWidth / charW)
+    if (cols <= 0) return
     const rows = Math.round((cols * source.videoHeight / source.videoWidth) * (charW / charH))
+    if (rows <= 0) return
 
     if (settings.renderMode === 'overlay') {
       renderOverlayFrame(ctx, settings, source, cols, rows, charW, charH, settings.charset, outW, outH)
